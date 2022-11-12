@@ -17,11 +17,11 @@ type Server interface {
 	// addr 是监听地址
 	Start(addr string) error
 
-	// AddRoute 路由注册功能
+	// addRoute 路由注册功能
 	// method 是 HTTP 方法
 	// path 是路由
 	// handleFunc 你的业务逻辑
-	AddRoute(method string, path string, handleFunc HandleFunc)
+	addRoute(method string, path string, handleFunc HandleFunc)
 	// AddRoute1 支持注册多个 handleFunc，没有必要提供
 	//AddRoute1(method string, path string, handlerFunc ...HandleFunc)
 }
@@ -56,21 +56,21 @@ func (h *HTTPServer) serve(ctx *Context) {
 	//	接下来就是查看路由，并且执行命中的业务逻辑
 }
 
-//func (h *HTTPServer) AddRoute(method string, path string, handlerFunc HandleFunc) {
+//func (h *HTTPServer) addRoute(method string, path string, handlerFunc HandleFunc) {
 //	// 这里注册到路由树里面
 //	//panic("implement me")
 //}
 
 func (h *HTTPServer) Get(path string, handleFunc HandleFunc) {
-	h.AddRoute(http.MethodGet, path, handleFunc)
+	h.addRoute(http.MethodGet, path, handleFunc)
 }
 
 func (h *HTTPServer) POST(path string, handleFunc HandleFunc) {
-	h.AddRoute(http.MethodPost, path, handleFunc)
+	h.addRoute(http.MethodPost, path, handleFunc)
 }
 
 func (h *HTTPServer) OPTIONS(path string, handleFunc HandleFunc) {
-	h.AddRoute(http.MethodOptions, path, handleFunc)
+	h.addRoute(http.MethodOptions, path, handleFunc)
 }
 
 func (h *HTTPServer) Start(addr string) error {

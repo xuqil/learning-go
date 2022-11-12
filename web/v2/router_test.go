@@ -17,30 +17,79 @@ func TestRouter_AddRoute(t *testing.T) {
 	}{
 		{
 			method: http.MethodGet,
+			path:   "/",
+		},
+		{
+			method: http.MethodGet,
+			path:   "/user",
+		},
+		{
+			method: http.MethodGet,
 			path:   "/user/home",
+		},
+		{
+			method: http.MethodGet,
+			path:   "/order/detail",
+		},
+		{
+			method: http.MethodPost,
+			path:   "/order/create",
+		},
+		{
+			method: http.MethodPost,
+			path:   "/login",
 		},
 	}
 
 	var mockHandler HandleFunc = func(ctx Context) {}
 	r := newRouter()
 	for _, route := range testRouters {
-		r.AddRoute(route.method, route.path, mockHandler)
+		r.addRoute(route.method, route.path, mockHandler)
 	}
 
 	//	在这里断言路由树和你的预期的一模一样
 	wantRouter := &router{
 		trees: map[string]*node{
-			http.MethodGet: &node{
-				path: "/",
+			http.MethodGet: {
+				path:    "/",
+				handler: mockHandler,
 				children: map[string]*node{
-					"user": &node{
-						path: "user",
+					"user": {
+						path:    "user",
+						handler: mockHandler,
 						children: map[string]*node{
-							"home": &node{
+							"home": {
 								path:    "home",
 								handler: mockHandler,
 							},
 						},
+					},
+					"order": {
+						path: "order",
+						children: map[string]*node{
+							"detail": {
+								path:    "detail",
+								handler: mockHandler,
+							},
+						},
+					},
+				},
+			},
+			http.MethodPost: {
+				path: "/",
+				children: map[string]*node{
+					"order": {
+						path: "order",
+						children: map[string]*node{
+							"create": {
+								path:    "create",
+								handler: mockHandler,
+							},
+						},
+					},
+					"login": {
+						path:    "login",
+						handler: mockHandler,
 					},
 				},
 			},
@@ -50,6 +99,32 @@ func TestRouter_AddRoute(t *testing.T) {
 	msg, ok := wantRouter.equal(r)
 	//	msg, ok := r.equal(wantRouter)
 	assert.True(t, ok, msg)
+
+	r = newRouter()
+	assert.Panicsf(t, func() {
+		r.addRoute(http.MethodGet, "", mockHandler)
+	}, "web: 路径必须以 / 开头")
+	assert.Panicsf(t, func() {
+		r.addRoute(http.MethodGet, "/a/b/c/", mockHandler)
+	}, "web: 路径不能以 / 结尾")
+	assert.Panicsf(t, func() {
+		r.addRoute(http.MethodGet, "/a//b/c/", mockHandler)
+	}, "web: 路由不能有连续的 /")
+
+	r = newRouter()
+	r.addRoute(http.MethodGet, "/", mockHandler)
+	assert.Panicsf(t, func() {
+		r.addRoute(http.MethodGet, "/", mockHandler)
+	}, "路由冲突，重复注册[/]")
+
+	r = newRouter()
+	r.addRoute(http.MethodGet, "/a/b/c", mockHandler)
+	assert.Panicsf(t, func() {
+		r.addRoute(http.MethodGet, "/a/b/c", mockHandler)
+	}, "路由冲突，重复注册[/a/b/c]")
+
+	// 可用的 http method，要不要校验？AddRoute 改为 addRoute，变私有，用户不能使用
+	// mockHandler 为 nil，要不要校验？用户决定，一般不会为 nil，如果为 nil 相当于没有注册路由
 }
 
 // string 返回错误信息，帮助排查
