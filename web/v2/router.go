@@ -61,8 +61,8 @@ func (r *router) addRoute(method string, path string, handlerFunc HandleFunc) {
 		if seg == "" {
 			panic("web: 路由不能有连续的 x")
 		}
-		children := root.childrenOrCreate(seg)
-		root = children
+		child := root.childrenOrCreate(seg)
+		root = child
 	}
 	if root.handler != nil {
 		panic(fmt.Sprintf("web: 路由冲突， 重复注册[%s]", path))
@@ -80,6 +80,32 @@ type node struct {
 	handler HandleFunc
 }
 
+func (r *router) findRoute(method string, path string) (*node, bool) {
+	// 沿着树深度优先搜索
+	root, ok := r.trees[method]
+	if !ok {
+		return nil, false
+	}
+
+	// 根节点特殊处理
+	if path == "/" {
+		return root, true
+	}
+
+	// 去除前置后置 /
+	path = strings.Trim(path, "/")
+	for _, seg := range strings.Split(path, "/") {
+		child, found := root.childOf(seg)
+		if !found {
+			return nil, false
+		}
+		root = child
+	}
+	//return root, root.handler != nil
+	// 确实有这个节点，但不能确定有 handler
+	return root, true
+}
+
 func (n *node) childrenOrCreate(seg string) *node {
 	if n.children == nil {
 		n.children = map[string]*node{}
@@ -92,4 +118,12 @@ func (n *node) childrenOrCreate(seg string) *node {
 		n.children[seg] = res
 	}
 	return res
+}
+
+func (n *node) childOf(path string) (*node, bool) {
+	if n.children == nil {
+		return nil, false
+	}
+	child, ok := n.children[path]
+	return child, ok
 }
