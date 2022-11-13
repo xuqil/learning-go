@@ -80,6 +80,9 @@ type node struct {
 	// 通配符匹配的节点
 	startChild *node
 
+	// 路径参数
+	paramChild *node
+
 	//	业务逻辑
 	handler HandleFunc
 }
@@ -111,7 +114,20 @@ func (r *router) findRoute(method string, path string) (*node, bool) {
 }
 
 func (n *node) childrenOrCreate(seg string) *node {
+	if seg[0] == ':' {
+		if n.startChild != nil {
+			panic("web: 不允许同时注册路径参数和通配符匹配，已有通配符匹配")
+		}
+		n.paramChild = &node{
+			path: seg,
+		}
+		return n.paramChild
+	}
+
 	if seg == "*" {
+		if n.paramChild != nil {
+			panic("web: 不允许同时注册路径参数和通配符匹配，已有路径参数")
+		}
 		if n.startChild == nil {
 			n.startChild = &node{path: "*"}
 		}
@@ -133,10 +149,16 @@ func (n *node) childrenOrCreate(seg string) *node {
 // childOf 优先考虑静态匹配，匹配不上，再考虑通配符
 func (n *node) childOf(path string) (*node, bool) {
 	if n.children == nil {
+		if n.paramChild != nil {
+			return n.paramChild, true
+		}
 		return n.startChild, n.startChild != nil
 	}
 	child, ok := n.children[path]
 	if !ok {
+		if n.paramChild != nil {
+			return n.paramChild, true
+		}
 		return n.startChild, n.startChild != nil
 	}
 	return child, ok

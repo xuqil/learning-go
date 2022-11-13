@@ -33,6 +33,10 @@ func TestRouter_addRoute(t *testing.T) {
 		},
 		{
 			method: http.MethodGet,
+			path:   "/order/detail/:id",
+		},
+		{
+			method: http.MethodGet,
 			path:   "/order/*",
 		},
 		{
@@ -90,6 +94,10 @@ func TestRouter_addRoute(t *testing.T) {
 							"detail": {
 								path:    "detail",
 								handler: mockHandler,
+								paramChild: &node{
+									path:    ":id",
+									handler: mockHandler,
+								},
 							},
 						},
 						startChild: &node{
@@ -167,6 +175,18 @@ func TestRouter_addRoute(t *testing.T) {
 
 	// 可用的 http method，要不要校验？AddRoute 改为 addRoute，变私有，用户不能使用
 	// mockHandler 为 nil，要不要校验？用户决定，一般不会为 nil，如果为 nil 相当于没有注册路由
+
+	r = newRouter()
+	r.addRoute(http.MethodGet, "/a/*", mockHandler)
+	assert.Panicsf(t, func() {
+		r.addRoute(http.MethodGet, "/a/:id", mockHandler)
+	}, "web: 不允许同时注册路径参数和通配符匹配，已有通配符匹配")
+
+	r = newRouter()
+	r.addRoute(http.MethodGet, "/a/:id", mockHandler)
+	assert.Panicsf(t, func() {
+		r.addRoute(http.MethodGet, "/a/*", mockHandler)
+	}, "web: 不允许同时注册路径参数和通配符匹配，已有路径参数")
 }
 
 // string 返回错误信息，帮助排查
@@ -193,6 +213,13 @@ func (n *node) equal(y *node) (string, bool) {
 
 	if n.startChild != nil {
 		msg, ok := n.startChild.equal(y.startChild)
+		if !ok {
+			return msg, ok
+		}
+	}
+
+	if n.paramChild != nil {
+		msg, ok := n.paramChild.equal(y.paramChild)
 		if !ok {
 			return msg, ok
 		}
@@ -260,6 +287,10 @@ func TestRouter_findRoute(t *testing.T) {
 		{
 			method: http.MethodPost,
 			path:   "/login",
+		},
+		{
+			method: http.MethodPost,
+			path:   "/login/:username",
 		},
 	}
 
@@ -339,6 +370,17 @@ func TestRouter_findRoute(t *testing.T) {
 			wantFound: true,
 			wantNode: &node{
 				path:    "/",
+				handler: mockHandler,
+			},
+		},
+		{
+			// username 路径参数匹配
+			name:      "login username",
+			method:    http.MethodPost,
+			path:      "/login/code",
+			wantFound: true,
+			wantNode: &node{
+				path:    ":username",
 				handler: mockHandler,
 			},
 		},
