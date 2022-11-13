@@ -56,14 +56,15 @@ func (h *HTTPServer) ServeHTTP(writer http.ResponseWriter, request *http.Request
 
 func (h *HTTPServer) serve(ctx *Context) {
 	//	接下来就是查看路由，并且执行命中的业务逻辑
-	n, ok := h.findRoute(ctx.Req.Method, ctx.Req.URL.Path)
-	if !ok || n.handler == nil {
+	info, ok := h.findRoute(ctx.Req.Method, ctx.Req.URL.Path)
+	if !ok || info.n.handler == nil {
 		// 路由没有命中，返回 404
 		ctx.Resp.WriteHeader(404)
 		_, _ = ctx.Resp.Write([]byte("NOT FOUND"))
 		return
 	}
-	n.handler(ctx)
+	ctx.PathParams = info.pathParams
+	info.n.handler(ctx)
 }
 
 //func (h *HTTPServer) addRoute(method string, path string, handlerFunc HandleFunc) {

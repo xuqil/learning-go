@@ -87,7 +87,7 @@ type node struct {
 	handler HandleFunc
 }
 
-func (r *router) findRoute(method string, path string) (*node, bool) {
+func (r *router) findRoute(method string, path string) (*matchInfo, bool) {
 	// 沿着树深度优先搜索
 	root, ok := r.trees[method]
 	if !ok {
@@ -96,21 +96,36 @@ func (r *router) findRoute(method string, path string) (*node, bool) {
 
 	// 根节点特殊处理
 	if path == "/" {
-		return root, true
+		return &matchInfo{
+			n: root,
+		}, true
 	}
 
 	// 去除前置后置 /
 	path = strings.Trim(path, "/")
+	var pathParams map[string]string
 	for _, seg := range strings.Split(path, "/") {
-		child, found := root.childOf(seg)
+		child, paramChild, found := root.childOf(seg)
 		if !found {
 			return nil, false
 		}
+		// 命中了路径参数
+		if paramChild {
+			if pathParams == nil {
+				pathParams = make(map[string]string)
+			}
+			// path 是 :id 这种形式
+			pathParams[child.path[1:]] = seg
+		}
 		root = child
 	}
+
 	//return root, root.handler != nil
 	// 确实有这个节点，但不能确定有 handler
-	return root, true
+	return &matchInfo{
+		n:          root,
+		pathParams: pathParams,
+	}, true
 }
 
 func (n *node) childrenOrCreate(seg string) *node {
@@ -147,19 +162,27 @@ func (n *node) childrenOrCreate(seg string) *node {
 }
 
 // childOf 优先考虑静态匹配，匹配不上，再考虑通配符
-func (n *node) childOf(path string) (*node, bool) {
+// 第一个返回值是子节点
+// 第二个是标记是否是路径参数
+// 第三个标记是否命中
+func (n *node) childOf(path string) (*node, bool, bool) {
 	if n.children == nil {
 		if n.paramChild != nil {
-			return n.paramChild, true
+			return n.paramChild, true, true
 		}
-		return n.startChild, n.startChild != nil
+		return n.startChild, false, n.startChild != nil
 	}
 	child, ok := n.children[path]
 	if !ok {
 		if n.paramChild != nil {
-			return n.paramChild, true
+			return n.paramChild, false, true
 		}
-		return n.startChild, n.startChild != nil
+		return n.startChild, false, n.startChild != nil
 	}
-	return child, ok
+	return child, false, ok
+}
+
+type matchInfo struct {
+	n          *node
+	pathParams map[string]string
 }
