@@ -41,7 +41,7 @@ func TestRouter_addRoute(t *testing.T) {
 		},
 	}
 
-	var mockHandler HandleFunc = func(ctx Context) {}
+	var mockHandler HandleFunc = func(ctx *Context) {}
 	r := newRouter()
 	for _, route := range testRouters {
 		r.addRoute(route.method, route.path, mockHandler)
@@ -96,7 +96,7 @@ func TestRouter_addRoute(t *testing.T) {
 		},
 	}
 	// 断言两者相等（函数不可以比较，需要新定义方法帮助比较）
-	msg, ok := wantRouter.equal(r)
+	msg, ok := wantRouter.equal(&r)
 	//	msg, ok := r.equal(wantRouter)
 	assert.True(t, ok, msg)
 
@@ -211,7 +211,7 @@ func TestRouter_findRoute(t *testing.T) {
 	}
 
 	r := newRouter()
-	var mockHandler HandleFunc = func(ctx Context) {}
+	var mockHandler HandleFunc = func(ctx *Context) {}
 	for _, route := range testRouters {
 		r.addRoute(route.method, route.path, mockHandler)
 	}

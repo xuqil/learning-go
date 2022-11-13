@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-type HandleFunc func(ctx Context)
+type HandleFunc func(ctx *Context)
 
 // 确保一定实现了 Server 接口
 var _ Server = &HTTPServer{}
@@ -33,7 +33,9 @@ type Server interface {
 // HTTPServer 实现了 Server ，而 Server 由组合了 http.Handler
 // 衍生 API
 type HTTPServer struct {
-	*router
+	// 因为 HTTPServer 提供给用户的是指针类型（*HTTPServer)
+	// 所有可以直接组合 router，否则需要使用 *router
+	router
 }
 
 func NewHTTPServer() *HTTPServer {
@@ -54,6 +56,14 @@ func (h *HTTPServer) ServeHTTP(writer http.ResponseWriter, request *http.Request
 
 func (h *HTTPServer) serve(ctx *Context) {
 	//	接下来就是查看路由，并且执行命中的业务逻辑
+	n, ok := h.findRoute(ctx.Req.Method, ctx.Req.URL.Path)
+	if !ok || n.handler == nil {
+		// 路由没有命中，返回 404
+		ctx.Resp.WriteHeader(404)
+		_, _ = ctx.Resp.Write([]byte("NOT FOUND"))
+		return
+	}
+	n.handler(ctx)
 }
 
 //func (h *HTTPServer) addRoute(method string, path string, handlerFunc HandleFunc) {

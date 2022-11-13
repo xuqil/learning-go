@@ -13,8 +13,8 @@ type router struct {
 }
 
 // newRouter 初始化 router
-func newRouter() *router {
-	return &router{
+func newRouter() router {
+	return router{
 		trees: map[string]*node{},
 	}
 }

@@ -27,28 +27,35 @@ import (
 //		h.Start("8082")
 //	}
 func TestServer(t *testing.T) {
-	var h = &HTTPServer{}
-	h.AddRoute(http.MethodGet, "/user", func(ctx Context) {
+	var h = NewHTTPServer()
+	/*h.addRoute(http.MethodGet, "/user", func(ctx *Context) {
 		fmt.Println("处理一件事")
 	})
 
-	handler1 := func(ctx Context) {
+	handler1 := func(ctx *Context) {
 		fmt.Println("处理第一件事")
 	}
-	handler2 := func(ctx Context) {
+	handler2 := func(ctx *Context) {
 		fmt.Println("处理第二件事")
 	}
 	// 允许用户注册多个 handleFunc
 	// 用户自己管理多个 handleFunc
-	h.AddRoute(http.MethodGet, "/user", func(ctx Context) {
+	h.addRoute(http.MethodGet, "/user", func(ctx *Context) {
 		handler1(ctx)
 		handler2(ctx)
-	})
+	})*/
 
-	h.Get("/hello", func(ctx Context) {
+	h.Get("/hello", func(ctx *Context) {
 		fmt.Println("GET")
 	})
 
+	h.Get("/user", func(ctx *Context) {
+		ctx.Resp.Write([]byte("hello, order detaail"))
+	})
+
+	h.addRoute(http.MethodGet, "/order/detail", func(ctx *Context) {
+
+	})
 	//	2. 方法2，自己手动管
 	err := h.Start(":8081")
 	if err != nil {
