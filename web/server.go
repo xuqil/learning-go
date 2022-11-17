@@ -28,6 +28,12 @@ type HTTPServer struct {
 	router
 }
 
+func NewHTTPServer() *HTTPServer {
+	return &HTTPServer{
+		router: newRouter(),
+	}
+}
+
 // ServeHTTP 服务请求入口
 func (h *HTTPServer) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	ctx := &Context{

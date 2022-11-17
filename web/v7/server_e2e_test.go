@@ -9,7 +9,7 @@ import (
 )
 
 func TestServer(t *testing.T) {
-	h := &HTTPServer{}
+	h := NewHTTPServer()
 
 	h.addRoute(http.MethodGet, "/user", func(ctx *Context) {
 		fmt.Println("处理第一件事")

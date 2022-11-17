@@ -220,7 +220,7 @@ func Test_route_addRoute(t *testing.T) {
 		},
 	}
 
-	msg, ok := wantRouter.equal(r)
+	msg, ok := wantRouter.equal(&r)
 	assert.True(t, ok, msg)
 
 	// 非法用例

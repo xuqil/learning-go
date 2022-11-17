@@ -29,6 +29,10 @@ var _ Server = &HTTPServer{}
 type HTTPServer struct {
 }
 
+func NewHTTPServer() *HTTPServer {
+	return &HTTPServer{}
+}
+
 // ServeHTTP 服务请求入口
 func (h *HTTPServer) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	ctx := &Context{

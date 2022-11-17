@@ -1,3 +1,5 @@
+//go:build v9
+
 package web
 
 import (
@@ -26,6 +28,12 @@ var _ Server = &HTTPServer{}
 
 type HTTPServer struct {
 	router
+}
+
+func NewHTTPServer() *HTTPServer {
+	return &HTTPServer{
+		router: newRouter(),
+	}
 }
 
 // ServeHTTP 服务请求入口
