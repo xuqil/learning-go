@@ -27,8 +27,40 @@ func TestServer(t *testing.T) {
 		handler2(ctx)
 	})
 
-	h.GET("/login", func(ctx *Context) {
+	h.POST("/form", func(ctx *Context) {
+		_, err := ctx.Resp.Write([]byte(fmt.Sprintf("hello, %s", ctx.Req.URL.Path)))
+		if err != nil {
+			return
+		}
+	})
 
+	h.GET("/values/:id", func(ctx *Context) {
+		id, err := ctx.PathValue("id").AsInt64()
+		if err != nil {
+			ctx.Resp.WriteHeader(400)
+			_, err := ctx.Resp.Write([]byte("id 输入不对"))
+			if err != nil {
+				return
+			}
+			return
+		}
+		_, err = ctx.Resp.Write([]byte(fmt.Sprintf("helo, %d", id)))
+		if err != nil {
+			return
+		}
+	})
+
+	type User struct {
+		Name string `json:"name"`
+	}
+
+	h.GET("/user/123", func(ctx *Context) {
+		err := ctx.RespJSON(202, User{
+			Name: "Tom",
+		})
+		if err != nil {
+			return
+		}
 	})
 
 	err := h.Start(":8081")
