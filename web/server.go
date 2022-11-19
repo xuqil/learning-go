@@ -26,6 +26,8 @@ var _ Server = &HTTPServer{}
 
 type HTTPServer struct {
 	router
+
+	mdls []Middleware
 }
 
 func NewHTTPServer() *HTTPServer {
@@ -40,7 +42,17 @@ func (h *HTTPServer) ServeHTTP(writer http.ResponseWriter, request *http.Request
 		Req:  request,
 		Resp: writer,
 	}
-	h.serve(ctx)
+	// 最后一个是这个
+	root := h.serve
+
+	// 然后这里就是利用最后一个不断往前回溯组装链条
+	// 从后往前，把后一个作为前一个的 next 构造好链条
+	for i := len(h.mdls) - 1; i >= 0; i-- {
+		root = h.mdls[i](root)
+	}
+	//h.serve(ctx)
+	// 这里执行的时候，就是从前往后了
+	root(ctx)
 }
 
 // serve 路由匹配和业务逻辑执行
