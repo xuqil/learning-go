@@ -26,6 +26,8 @@ type Context struct {
 	MatchRoute string
 
 	tplEngine TemplateEngin
+
+	UserValues map[string]any
 }
 
 func (c *Context) Render(tplName string, data any) error {
