@@ -2,13 +2,13 @@ package orm
 
 import (
 	"context"
-	"fmt"
-	"reflect"
+	"leanring-go/orm/internal/errs"
 	"strings"
 )
 
 type Selector[T any] struct {
 	table string
+	model *model
 	where []Predicate
 	sb    *strings.Builder
 	args  []any
@@ -16,14 +16,17 @@ type Selector[T any] struct {
 
 func (s *Selector[T]) Build() (*Query, error) {
 	s.sb = &strings.Builder{}
+	var err error
+	s.model, err = parseModel(new(T))
+	if err != nil {
+		return nil, err
+	}
 	sb := s.sb
 	sb.WriteString("SELECT * FROM ")
 	// 把表名拿到
 	if s.table == "" {
-		var t T
-		typ := reflect.TypeOf(t)
 		sb.WriteByte('`')
-		sb.WriteString(typ.Name())
+		sb.WriteString(s.model.tableName)
 		sb.WriteByte('`')
 	} else {
 		//sb.WriteByte('`')
@@ -80,14 +83,19 @@ func (s *Selector[T]) buildExpression(expr Expression) error {
 			s.sb.WriteByte(')')
 		}
 	case Column:
+		fd, ok := s.model.fields[exp.name]
+		// 字段（列）不对
+		if !ok {
+			return errs.NewErrUnknownField(exp.name)
+		}
 		s.sb.WriteByte('`')
-		s.sb.WriteString(exp.name)
+		s.sb.WriteString(fd.colName)
 		s.sb.WriteByte('`')
 	case value:
 		s.sb.WriteByte('?')
 		s.addArg(exp.val)
 	default:
-		return fmt.Errorf("orm: 不支持的表达式类型 %v", expr)
+		return errs.NewErrUnsupportedExpression(expr)
 	}
 	return nil
 }

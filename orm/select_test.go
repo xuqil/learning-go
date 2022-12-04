@@ -3,6 +3,7 @@ package orm
 import (
 	"database/sql"
 	"github.com/stretchr/testify/assert"
+	"leanring-go/orm/internal/errs"
 	"testing"
 )
 
@@ -18,7 +19,7 @@ func TestSelector_Build(t *testing.T) {
 			name:    "select",
 			builder: &Selector[TestModel]{},
 			wantQuery: &Query{
-				SQL:  "SELECT * FROM `TestModel`;",
+				SQL:  "SELECT * FROM `test_model`;",
 				Args: nil,
 			},
 		},
@@ -34,7 +35,7 @@ func TestSelector_Build(t *testing.T) {
 			name:    "empty from",
 			builder: (&Selector[TestModel]{}).From(""),
 			wantQuery: &Query{
-				SQL:  "SELECT * FROM `TestModel`;",
+				SQL:  "SELECT * FROM `test_model`;",
 				Args: nil,
 			},
 		},
@@ -50,14 +51,14 @@ func TestSelector_Build(t *testing.T) {
 			name:    "empty where",
 			builder: (&Selector[TestModel]{}).Where(),
 			wantQuery: &Query{
-				SQL: "SELECT * FROM `TestModel`;",
+				SQL: "SELECT * FROM `test_model`;",
 			},
 		},
 		{
 			name:    "where",
 			builder: (&Selector[TestModel]{}).Where(C("Age").Eq(18)),
 			wantQuery: &Query{
-				SQL:  "SELECT * FROM `TestModel` WHERE `Age` = ?;",
+				SQL:  "SELECT * FROM `test_model` WHERE `age` = ?;",
 				Args: []any{18},
 			},
 		},
@@ -65,7 +66,7 @@ func TestSelector_Build(t *testing.T) {
 			name:    "not",
 			builder: (&Selector[TestModel]{}).Where(Not(C("Age").Eq(18))),
 			wantQuery: &Query{
-				SQL:  "SELECT * FROM `TestModel` WHERE  NOT (`Age` = ?);",
+				SQL:  "SELECT * FROM `test_model` WHERE  NOT (`age` = ?);",
 				Args: []any{18},
 			},
 		},
@@ -73,7 +74,7 @@ func TestSelector_Build(t *testing.T) {
 			name:    "and",
 			builder: (&Selector[TestModel]{}).Where(C("Age").Eq(18).And(C("FirstName").Eq("Tom"))),
 			wantQuery: &Query{
-				SQL:  "SELECT * FROM `TestModel` WHERE (`Age` = ?) AND (`FirstName` = ?);",
+				SQL:  "SELECT * FROM `test_model` WHERE (`age` = ?) AND (`first_name` = ?);",
 				Args: []any{18, "Tom"},
 			},
 		},
@@ -81,9 +82,14 @@ func TestSelector_Build(t *testing.T) {
 			name:    "or",
 			builder: (&Selector[TestModel]{}).Where(C("Age").Eq(18).Or(C("FirstName").Eq("Tom"))),
 			wantQuery: &Query{
-				SQL:  "SELECT * FROM `TestModel` WHERE (`Age` = ?) OR (`FirstName` = ?);",
+				SQL:  "SELECT * FROM `test_model` WHERE (`age` = ?) OR (`first_name` = ?);",
 				Args: []any{18, "Tom"},
 			},
+		},
+		{
+			name:    "invalid column",
+			builder: (&Selector[TestModel]{}).Where(C("Age").Eq(18).Or(C("XXXX").Eq("Tom"))),
+			wantErr: errs.NewErrUnknownField("XXXX"),
 		},
 	}
 
