@@ -3,6 +3,7 @@ package orm
 import (
 	"leanring-go/orm/internal/errs"
 	"reflect"
+	"sync"
 	"unicode"
 )
 
@@ -18,28 +19,54 @@ type field struct {
 
 // registry 代表的是元数据的注册中心
 type registry struct {
-	models map[reflect.Type]*model
+	// 读写锁
+	//lock   sync.RWMutex
+	models sync.Map
 }
 
 func newRegistry() *registry {
-	return &registry{
-		models: make(map[reflect.Type]*model, 64),
-	}
+	return &registry{}
 }
 
+// get 会存在覆盖问题
 func (r *registry) get(val any) (*model, error) {
 	typ := reflect.TypeOf(val)
-	m, ok := r.models[typ]
-	if !ok {
-		var err error
-		m, err = r.parseModel(val)
-		if err != nil {
-			return nil, err
-		}
-		r.models[typ] = m
+	m, ok := r.models.Load(typ)
+	if ok {
+		return m.(*model), nil
 	}
-	return m, nil
+	m, err := r.parseModel(val)
+	if err != nil {
+		return nil, err
+	}
+	r.models.Store(typ, m)
+	return m.(*model), nil
 }
+
+// get 使用 double read 读写锁
+//func (r *registry) get(val any) (*model, error) {
+// typ := reflect.TypeOf(val)
+// r.lock.RLock()
+// m, ok := r.models[typ]
+// r.lock.RUnlock()
+// if ok {
+//    return m, nil
+// }
+//
+// r.lock.Lock()
+// defer r.lock.Unlock()
+// m, ok = r.models[typ]
+// if ok {
+//    return m, nil
+// }
+//
+// m, err := r.parseModel(val)
+// if err != nil {
+//    return nil, err
+// }
+// r.models[typ] = m
+// return m, nil
+//}
 
 func (r *registry) parseModel(entity any) (*model, error) {
 	typ := reflect.TypeOf(entity)
