@@ -3,6 +3,7 @@ package orm
 import (
 	"context"
 	"leanring-go/orm/internal/errs"
+	"reflect"
 	"strings"
 )
 
@@ -126,11 +127,84 @@ func (s *Selector[T]) Where(ps ...Predicate) *Selector[T] {
 }
 
 func (s *Selector[T]) Get(ctx context.Context) (*T, error) {
-	//TODO implement me
-	panic("implement me")
+	q, err := s.Build()
+	// 构造 SQL 失败
+	if err != nil {
+		return nil, err
+	}
+
+	db := s.db.db
+	//	在这里，就是发起查询，并且处理结果集
+	rows, err := db.QueryContext(ctx, q.SQL, q.Args...)
+	// 查询错误
+	if err != nil {
+		return nil, err
+	}
+
+	// 确认有没有数据
+	if !rows.Next() {
+		// 返回 error，和 sql 包语义保持一致。sql.ErrNoRows
+		return nil, ErrNoRows
+	}
+
+	// 获取 SELECT 出来了哪些列
+	cs, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+
+	// 怎么利用 cs 解决类型问题和顺序问题
+	tp := new(T)
+
+	// 通过 cs 来构造 vals
+	vals := make([]any, 0, len(cs))
+	for _, c := range cs {
+		// c 是列名
+		for _, fd := range s.model.fields {
+			if fd.colName == c {
+				// 反射创建一个实例
+				// 这里创建的实例时原本类型的指针类型
+				// 例如 fd.Type = int，那么 val 是 *int
+				val := reflect.New(fd.typ)
+				vals = append(vals, val.Interface())
+			}
+		}
+	}
+
+	// 1、类型要匹配
+	// 2、顺序要匹配
+	rows.Scan(vals...)
+
+	// 把 vals 塞进结果 tp 里面
+	tpValue := reflect.ValueOf(tp)
+	for i, c := range cs {
+		for _, fd := range s.model.fields {
+			if fd.colName == c {
+				tpValue.Elem().FieldByName(fd.goName).
+					Set(reflect.ValueOf(vals[i]).Elem())
+			}
+		}
+	}
+
+	// 在这里处理结果集
+	return tp, err
 }
 
 func (s *Selector[T]) GetMulti(ctx context.Context) ([]*T, error) {
-	//TODO implement me
-	panic("implement me")
+	q, err := s.Build()
+	// 构造 SQL 失败
+	if err != nil {
+		return nil, err
+	}
+
+	db := s.db.db
+	//	在这里，就是发起查询，并且处理结果集
+	_, err = db.QueryContext(ctx, q.SQL, q.Args...)
+	if err != nil {
+		return nil, err
+	}
+
+	// 在这里处理结果集
+	return nil, err
+
 }

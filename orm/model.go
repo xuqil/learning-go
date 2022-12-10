@@ -25,8 +25,12 @@ type Model struct {
 type ModelOpt func(m *Model) error
 
 type Field struct {
+	// 字段名
+	goName string
 	// 列名
 	colName string
+	// 代表的是字段的类型
+	typ reflect.Type
 }
 
 // registry 代表的是元数据的注册中心
@@ -100,7 +104,10 @@ func (r *registry) Register(entity any, opts ...ModelOpt) (*Model, error) {
 			colName = underscoreName(fd.Name)
 		}
 		fieldMap[fd.Name] = &Field{
+			goName:  fd.Name,
 			colName: colName,
+			// 字段类型
+			typ: fd.Type,
 		}
 	}
 	var tableName string
