@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+// 测试 Value。Go 类型到数据库类型
 func TestJsonColumn_Value(t *testing.T) {
 	js := JsonColumn[User]{Valid: true, Val: User{Name: "Tom"}}
 	value, err := js.Value()
@@ -22,6 +23,7 @@ func TestJsonColumn_Value(t *testing.T) {
 	assert.Nil(t, value)
 }
 
+// 测试 Scan。数据库类型到 Go 类型
 func TestJsonColumn_Scan(t *testing.T) {
 	testCases := []struct {
 		name    string
@@ -60,6 +62,7 @@ func TestJsonColumn_Scan(t *testing.T) {
 	}
 }
 
+// 测试 Scan。测试可以转为 JSON 的 Go 类型
 func TestJsonColumn_ScanTypes(t *testing.T) {
 	jsSlice := JsonColumn[[]string]{}
 	err := jsSlice.Scan(`["a", "b", "c"]`)
@@ -81,6 +84,7 @@ type User struct {
 	Name string
 }
 
+// JsonColumn Value 方法的例子
 func ExampleJsonColumn_Value() {
 	js := JsonColumn[User]{Valid: true, Val: User{Name: "Tom"}}
 	value, err := js.Value()
@@ -92,6 +96,7 @@ func ExampleJsonColumn_Value() {
 	// {"Name":"Tom"}
 }
 
+// JsonColumn Scan 方法的例子
 func ExampleJsonColumn_Scan() {
 	js := JsonColumn[User]{}
 	err := js.Scan(`{"Name":"Tom"}`)
@@ -108,7 +113,8 @@ type UserJson struct {
 	Name string
 }
 
-func TestJsonColumn_Crud(t *testing.T) {
+// 测试 JsonColumn 到真实数据库的 CRUD
+func TestJsonColumn_CRUD(t *testing.T) {
 	db, err := sql.Open("sqlite3", "file:test.db?cache=shared&mode=memory")
 	require.NoError(t, err)
 	defer db.Close()
@@ -143,15 +149,14 @@ CREATE TABLE IF NOT EXISTS user_json(
 	require.NoError(t, row.Err())
 	js2 := JsonColumn[UserJson]{}
 	// 主要要用指针
-	var name string
-	err = row.Scan(&name)
+	var data string
+	err = row.Scan(&data)
 	require.NoError(t, err)
-	err = js2.Scan(name)
+	err = js2.Scan(data)
 	require.NoError(t, err)
-	assert.Equal(t, `{"ID":1,"Name":"Tom"}`, name)
-	log.Println(name) // {"Name":"Tom"}
+	assert.Equal(t, `{"ID":1,"Name":"Tom"}`, data)
+	log.Println(data) // {"Name":"Tom"}
 	assert.Equal(t, UserJson{ID: 1, Name: "Tom"}, js2.Val)
 	log.Println(js2.Val)
 	cancel()
-
 }
