@@ -1,4 +1,4 @@
-package orm
+package model
 
 import (
 	"leanring-go/orm/internal/errs"
@@ -18,22 +18,25 @@ type Registry interface {
 }
 
 type Model struct {
-	tableName string
+	TableName string
 	// 字段名到字段定义的映射
-	fieldMap map[string]*Field
+	FieldMap map[string]*Field
 	// 列名到字段定义的映射
-	columnMap map[string]*Field
+	ColumnMap map[string]*Field
 }
 
 type ModelOpt func(m *Model) error
 
 type Field struct {
 	// 字段名
-	goName string
+	GoName string
 	// 列名
-	colName string
+	ColName string
 	// 代表的是字段的类型
-	typ reflect.Type
+	Typ reflect.Type
+
+	// 字段相对于结构体本身的偏移量
+	Offset uintptr
 }
 
 // registry 代表的是元数据的注册中心
@@ -43,7 +46,7 @@ type registry struct {
 	models sync.Map
 }
 
-func newRegistry() *registry {
+func NewRegistry() Registry {
 	return &registry{}
 }
 
@@ -108,10 +111,11 @@ func (r *registry) Register(entity any, opts ...ModelOpt) (*Model, error) {
 			colName = underscoreName(fd.Name)
 		}
 		fdMeta := &Field{
-			goName:  fd.Name,
-			colName: colName,
+			GoName:  fd.Name,
+			ColName: colName,
 			// 字段类型
-			typ: fd.Type,
+			Typ:    fd.Type,
+			Offset: fd.Offset,
 		}
 		fieldMap[fd.Name] = fdMeta
 		columnMap[colName] = fdMeta
@@ -126,9 +130,9 @@ func (r *registry) Register(entity any, opts ...ModelOpt) (*Model, error) {
 	}
 
 	res := &Model{
-		tableName: tableName,
-		fieldMap:  fieldMap,
-		columnMap: columnMap,
+		TableName: tableName,
+		FieldMap:  fieldMap,
+		ColumnMap: columnMap,
 	}
 
 	for _, opt := range opts {
@@ -143,7 +147,7 @@ func (r *registry) Register(entity any, opts ...ModelOpt) (*Model, error) {
 
 func ModelWithTableName(tableName string) ModelOpt {
 	return func(m *Model) error {
-		m.tableName = tableName
+		m.TableName = tableName
 		//if tableName == "" {
 		//	return errs
 		//}
@@ -153,11 +157,11 @@ func ModelWithTableName(tableName string) ModelOpt {
 
 func ModelWithColumnName(field string, colName string) ModelOpt {
 	return func(m *Model) error {
-		fd, ok := m.fieldMap[field]
+		fd, ok := m.FieldMap[field]
 		if !ok {
 			return errs.NewErrUnknownField(field)
 		}
-		fd.colName = colName
+		fd.ColName = colName
 		return nil
 	}
 }
@@ -196,4 +200,8 @@ func underscoreName(tableName string) string {
 
 	}
 	return string(buf)
+}
+
+type TableName interface {
+	TableName() string
 }
