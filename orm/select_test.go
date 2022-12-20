@@ -333,10 +333,10 @@ CREATE TABLE IF NOT EXISTS test_model(
 `
 }
 
-func memoryDB(t *testing.T) *DB {
+func memoryDB(t *testing.T, opts ...DBOption) *DB {
 	db, err := Open("sqlite3", "file:test.db?cache=shared&mode=memory",
 		// 仅仅用于单元测试
-		DBWithDialect(DialectMySql))
+		opts...)
 	require.NoError(t, err)
 	return db
 }
