@@ -1,3 +1,5 @@
+//go:build v7
+
 package model
 
 import (

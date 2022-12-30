@@ -1,3 +1,5 @@
+//go:build v11
+
 package valuer
 
 import (

@@ -1,3 +1,5 @@
+//go:build v13
+
 package model
 
 import (

@@ -1,3 +1,5 @@
+//go:build v4
+
 package orm
 
 import (

@@ -104,7 +104,7 @@ func TestSelector_Select(t *testing.T) {
 		},
 		{
 			name: "columns in where",
-			q:    NewSelector[TestModel](db).Where(C("Id").As("my_id").Eq(18)),
+			q:    NewSelector[TestModel](db).Where(C("Id").As("my_id").EQ(18)),
 			wantQuery: &Query{
 				SQL:  "SELECT * FROM `test_model` WHERE `id` = ?;",
 				Args: []any{18},
@@ -175,7 +175,7 @@ func TestSelector_Build(t *testing.T) {
 		},
 		{
 			name:    "where",
-			builder: NewSelector[TestModel](db).Where(C("Age").Eq(18)),
+			builder: NewSelector[TestModel](db).Where(C("Age").EQ(18)),
 			wantQuery: &Query{
 				SQL:  "SELECT * FROM `test_model` WHERE `age` = ?;",
 				Args: []any{18},
@@ -183,7 +183,7 @@ func TestSelector_Build(t *testing.T) {
 		},
 		{
 			name:    "not",
-			builder: NewSelector[TestModel](db).Where(Not(C("Age").Eq(18))),
+			builder: NewSelector[TestModel](db).Where(Not(C("Age").EQ(18))),
 			wantQuery: &Query{
 				SQL:  "SELECT * FROM `test_model` WHERE  NOT (`age` = ?);",
 				Args: []any{18},
@@ -191,7 +191,7 @@ func TestSelector_Build(t *testing.T) {
 		},
 		{
 			name:    "and",
-			builder: NewSelector[TestModel](db).Where(C("Age").Eq(18).And(C("FirstName").Eq("Tom"))),
+			builder: NewSelector[TestModel](db).Where(C("Age").EQ(18).And(C("FirstName").EQ("Tom"))),
 			wantQuery: &Query{
 				SQL:  "SELECT * FROM `test_model` WHERE (`age` = ?) AND (`first_name` = ?);",
 				Args: []any{18, "Tom"},
@@ -199,7 +199,7 @@ func TestSelector_Build(t *testing.T) {
 		},
 		{
 			name:    "or",
-			builder: NewSelector[TestModel](db).Where(C("Age").Eq(18).Or(C("FirstName").Eq("Tom"))),
+			builder: NewSelector[TestModel](db).Where(C("Age").EQ(18).Or(C("FirstName").EQ("Tom"))),
 			wantQuery: &Query{
 				SQL:  "SELECT * FROM `test_model` WHERE (`age` = ?) OR (`first_name` = ?);",
 				Args: []any{18, "Tom"},
@@ -207,7 +207,7 @@ func TestSelector_Build(t *testing.T) {
 		},
 		{
 			name:    "invalid column",
-			builder: NewSelector[TestModel](db).Where(C("Age").Eq(18).Or(C("XXXX").Eq("Tom"))),
+			builder: NewSelector[TestModel](db).Where(C("Age").EQ(18).Or(C("XXXX").EQ("Tom"))),
 			wantErr: errs.NewErrUnknownField("XXXX"),
 		},
 		{
@@ -220,7 +220,7 @@ func TestSelector_Build(t *testing.T) {
 		},
 		{
 			name:    "raw expression used in predicate",
-			builder: NewSelector[TestModel](db).Where(C("Id").Eq(Raw("`age`+?", 1))),
+			builder: NewSelector[TestModel](db).Where(C("Id").EQ(Raw("`age`+?", 1))),
 			wantQuery: &Query{
 				SQL:  "SELECT * FROM `test_model` WHERE `id` = (`age`+?);",
 				Args: []any{1},
@@ -272,12 +272,12 @@ func TestSelector_Get(t *testing.T) {
 	}{
 		{
 			name:    "invalid query",
-			s:       NewSelector[TestModel](db).Where(C("XXX").Eq(1)),
+			s:       NewSelector[TestModel](db).Where(C("XXX").EQ(1)),
 			wantErr: errs.NewErrUnknownField("XXX"),
 		},
 		{
 			name:    "query error",
-			s:       NewSelector[TestModel](db).Where(C("Id").Eq(1)),
+			s:       NewSelector[TestModel](db).Where(C("Id").EQ(1)),
 			wantErr: errors.New("query error"),
 		},
 		{
@@ -287,7 +287,7 @@ func TestSelector_Get(t *testing.T) {
 		},
 		{
 			name: "data",
-			s:    NewSelector[TestModel](db).Where(C("Id").Eq(1)),
+			s:    NewSelector[TestModel](db).Where(C("Id").EQ(1)),
 			wantRes: &TestModel{
 				Id:        1,
 				FirstName: "Tom",

@@ -3,8 +3,11 @@ module leanring-go
 go 1.19
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/go-redis/redis/v9 v9.0.0-rc.2
+	github.com/go-sql-driver/mysql v1.7.0
 	github.com/google/uuid v1.3.0
+	github.com/gotomicro/ekit v0.0.5
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -18,7 +21,6 @@ require (
 )
 
 require (
-	github.com/DATA-DOG/go-sqlmock v1.5.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

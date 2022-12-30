@@ -1,3 +1,5 @@
+//go:build v8
+
 package orm
 
 import (

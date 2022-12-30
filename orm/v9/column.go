@@ -16,8 +16,8 @@ func (c Column) As(alias string) Column {
 	}
 }
 
-// Eq 例如 C("id").Eq(12)
-// sub.C("id").Eq(12)
+// Eq 例如 C("id").EQ(12)
+// sub.C("id").EQ(12)
 func (c Column) Eq(arg any) Predicate {
 	return Predicate{
 		left:  c,
