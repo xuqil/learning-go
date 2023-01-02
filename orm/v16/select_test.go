@@ -1,3 +1,5 @@
+//go:build v16
+
 package orm
 
 import (
