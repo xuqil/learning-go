@@ -115,6 +115,17 @@ func (b *BuildInMapCache) Delete(ctx context.Context, key string) error {
 	return nil
 }
 
+func (b *BuildInMapCache) LoadAndDelete(ctx context.Context, key string) (any, error) {
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
+	itm, ok := b.data[key]
+	if !ok {
+		return nil, errKeyNotFound
+	}
+	err := b.Delete(ctx, key)
+	return itm.val, err
+}
+
 func (b *BuildInMapCache) Close() {
 	b.close <- struct{}{}
 }
