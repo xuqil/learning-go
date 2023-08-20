@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"leanring-go/micro/rpc/message"
 	"testing"
 )
 
@@ -34,18 +35,19 @@ func Test_setFuncField(t *testing.T) {
 			wantErr: errors.New("rpc: 只支持指向结构体的一级指针"),
 		},
 		{
-			name:    "user service",
-			service: &UserService{},
+			name: "user service",
 			mock: func(ctrl *gomock.Controller) Proxy {
 				p := NewMockProxy(ctrl)
-				p.EXPECT().Invoke(gomock.Any(), &Request{
+				p.EXPECT().Invoke(gomock.Any(), &message.Request{
+					HeadLength:  uint32(36),
+					BodyLength:  uint32(10),
 					ServiceName: "user-service",
 					MethodName:  "GetById",
-					Arg:         []byte(`{"Id":123}`),
-				}).
-					Return(&Response{}, nil)
+					Data:        []byte(`{"Id":123}`),
+				}).Return(&message.Response{}, nil)
 				return p
 			},
+			service: &UserService{},
 		},
 	}
 
@@ -53,7 +55,6 @@ func Test_setFuncField(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-
 			err := setFuncField(tc.service, tc.mock(ctrl))
 			assert.Equal(t, tc.wantErr, err)
 			if err != nil {
