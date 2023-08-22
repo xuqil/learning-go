@@ -8,6 +8,8 @@ import (
 	"leanring-go/micro/rpc/serialize/json"
 	"net"
 	"reflect"
+	"strconv"
+	"time"
 )
 
 type Server struct {
@@ -74,11 +76,18 @@ func (s *Server) handleConn(conn net.Conn) error {
 		}
 
 		ctx := context.Background()
+		cancel := func() {}
+		if deadlineStr, ok := req.Meta["deadline"]; ok {
+			if deadline, er := strconv.ParseInt(deadlineStr, 10, 64); er == nil {
+				ctx, cancel = context.WithDeadline(ctx, time.UnixMilli(deadline))
+			}
+		}
 		oneway, ok := req.Meta["one-way"]
 		if ok && oneway == "true" {
 			ctx = CtxWithOneway(ctx)
 		}
 		resp, err := s.Invoke(ctx, req)
+		cancel()
 		if err != nil {
 			// 处理业务 error
 			resp.Error = []byte(err.Error())
@@ -130,7 +139,7 @@ func (s *reflectionStub) invoke(ctx context.Context, req *message.Request) ([]by
 	method := s.value.MethodByName(req.MethodName)
 	in := make([]reflect.Value, 2)
 	// 暂时我们不知道怎么传这个 context，所以我们就直接写死
-	in[0] = reflect.ValueOf(context.Background())
+	in[0] = reflect.ValueOf(ctx)
 	inReq := reflect.New(method.Type().In(1).Elem())
 	serializer, ok := s.serializers[req.Serializer]
 	if !ok {
