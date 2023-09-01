@@ -1,38 +1,62 @@
 package round_robin
 
 import (
-	"fmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/balancer"
 	"testing"
 )
 
 func TestWeightBalancer_Pick(t *testing.T) {
-	type fields struct {
-		connections []*weightConn
+	b := &WeightBalancer{
+		connections: []*weightConn{
+			{
+				c: SubConn{
+					name: "weight-5",
+				},
+				weight:          5,
+				efficientWeight: 5,
+				currentWeight:   5,
+			},
+			{
+				c: SubConn{
+					name: "weight-4",
+				},
+				weight:          4,
+				efficientWeight: 4,
+				currentWeight:   4,
+			},
+			{
+				c: SubConn{
+					name: "weight-3",
+				},
+				weight:          4,
+				efficientWeight: 4,
+				currentWeight:   4,
+			},
+		},
 	}
-	type args struct {
-		info balancer.PickInfo
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    balancer.PickResult
-		wantErr assert.ErrorAssertionFunc
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			w := &WeightBalancer{
-				connections: tt.fields.connections,
-			}
-			got, err := w.Pick(tt.args.info)
-			if !tt.wantErr(t, err, fmt.Sprintf("Pick(%v)", tt.args.info)) {
-				return
-			}
-			assert.Equalf(t, tt.want, got, "Pick(%v)", tt.args.info)
-		})
-	}
+
+	pickRes, err := b.Pick(balancer.PickInfo{})
+	require.NoError(t, err)
+	assert.Equal(t, "weight-5", pickRes.SubConn.(SubConn).name)
+
+	pickRes, err = b.Pick(balancer.PickInfo{})
+	require.NoError(t, err)
+	assert.Equal(t, "weight-4", pickRes.SubConn.(SubConn).name)
+
+	pickRes, err = b.Pick(balancer.PickInfo{})
+	require.NoError(t, err)
+	assert.Equal(t, "weight-3", pickRes.SubConn.(SubConn).name)
+
+	pickRes, err = b.Pick(balancer.PickInfo{})
+	require.NoError(t, err)
+	assert.Equal(t, "weight-5", pickRes.SubConn.(SubConn).name)
+
+	pickRes, err = b.Pick(balancer.PickInfo{})
+	require.NoError(t, err)
+	assert.Equal(t, "weight-4", pickRes.SubConn.(SubConn).name)
+
+	pickRes.Done(balancer.DoneInfo{})
+	// 断言 efficientWeight
 }

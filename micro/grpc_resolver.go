@@ -2,6 +2,7 @@ package micro
 
 import (
 	"context"
+	"google.golang.org/grpc/attributes"
 	"google.golang.org/grpc/resolver"
 	"leanring-go/micro/registry"
 	"time"
@@ -82,7 +83,10 @@ func (g *grpcResolver) resolve() {
 	}
 	address := make([]resolver.Address, 0, len(instance))
 	for _, si := range instance {
-		address = append(address, resolver.Address{Addr: si.Address})
+		address = append(address, resolver.Address{
+			Addr:       si.Address,
+			Attributes: attributes.New("weight", si.Weight),
+		})
 	}
 	err = g.cc.UpdateState(resolver.State{
 		Addresses: address,
