@@ -3,23 +3,26 @@ package round_robin
 import (
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
+	"google.golang.org/grpc/resolver"
+	"leanring-go/micro/route"
 	"math"
 	"sync"
 )
 
 type WeightBalancer struct {
 	connections []*weightConn
+	filter      route.Filter
 }
 
 func (w *WeightBalancer) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
-	if len(w.connections) == 0 {
-		return balancer.PickResult{}, balancer.ErrNoSubConnAvailable
-	}
 	var totalWeight uint32
 	var res *weightConn
-
-	// 并发情况下，数据可能会不准确
+	//w.mutex.Lock()
+	//defer w.mutex.Unlock()
 	for _, c := range w.connections {
+		if w.filter != nil && !w.filter(info, c.addr) {
+			continue
+		}
 		c.mutex.Lock()
 		totalWeight = totalWeight + c.efficientWeight
 		c.currentWeight = c.currentWeight + c.efficientWeight
@@ -27,6 +30,9 @@ func (w *WeightBalancer) Pick(info balancer.PickInfo) (balancer.PickResult, erro
 			res = c
 		}
 		c.mutex.Unlock()
+	}
+	if res == nil {
+		return balancer.PickResult{}, balancer.ErrNoSubConnAvailable
 	}
 	res.mutex.Lock()
 	res.currentWeight = res.currentWeight - totalWeight
@@ -47,30 +53,12 @@ func (w *WeightBalancer) Pick(info balancer.PickInfo) (balancer.PickResult, erro
 				res.efficientWeight++
 			}
 			res.mutex.Unlock()
-
-			//for {
-			//	weight := atomic.LoadUint32(&res.efficientWeight)
-			//	if info.Err != nil && weight == 0 {
-			//		return
-			//	}
-			//	if info.Err == nil && weight == math.MaxUint32 {
-			//		return
-			//	}
-			//	newWeight := weight
-			//	if info.Err != nil {
-			//		newWeight--
-			//	} else {
-			//		newWeight++
-			//	}
-			//	if atomic.CompareAndSwapUint32(&(res.efficientWeight), weight, newWeight) {
-			//		return
-			//	}
-			//}
 		},
 	}, nil
 }
 
 type WeightBalancerBuilder struct {
+	Filter route.Filter
 }
 
 func (w *WeightBalancerBuilder) Build(info base.PickerBuildInfo) balancer.Picker {
@@ -82,10 +70,12 @@ func (w *WeightBalancerBuilder) Build(info base.PickerBuildInfo) balancer.Picker
 			weight:          weight,
 			currentWeight:   weight,
 			efficientWeight: weight,
+			addr:            subInfo.Address,
 		})
 	}
 	return &WeightBalancer{
 		connections: cs,
+		filter:      w.Filter,
 	}
 }
 
@@ -95,4 +85,5 @@ type weightConn struct {
 	weight          uint32
 	currentWeight   uint32
 	efficientWeight uint32
+	addr            resolver.Address
 }
