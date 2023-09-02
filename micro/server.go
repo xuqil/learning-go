@@ -17,6 +17,7 @@ type Server struct {
 	*grpc.Server
 	listener net.Listener
 	weight   uint32
+	group    string
 }
 
 func NewServer(name string, opts ...ServerOption) (*Server, error) {
@@ -37,6 +38,12 @@ func ServerWithWeight(weight uint32) ServerOption {
 	}
 }
 
+func ServerWithGroup(group string) ServerOption {
+	return func(server *Server) {
+		server.group = group
+	}
+}
+
 // Start 当用户调用这个方法的时候，说明服务已经准备好了
 func (s *Server) Start(addr string) error {
 	listener, err := net.Listen("tcp", addr)
@@ -51,6 +58,7 @@ func (s *Server) Start(addr string) error {
 		err = s.registry.Register(ctx, registry.ServiceInstance{
 			Name:    s.name,
 			Address: listener.Addr().String(),
+			Group:   s.group,
 		})
 		if err != nil {
 			return err

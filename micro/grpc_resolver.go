@@ -84,8 +84,9 @@ func (g *grpcResolver) resolve() {
 	address := make([]resolver.Address, 0, len(instance))
 	for _, si := range instance {
 		address = append(address, resolver.Address{
-			Addr:       si.Address,
-			Attributes: attributes.New("weight", si.Weight),
+			Addr: si.Address,
+			Attributes: attributes.New("weight", si.Weight).
+				WithValue("group", si.Group),
 		})
 	}
 	err = g.cc.UpdateState(resolver.State{
